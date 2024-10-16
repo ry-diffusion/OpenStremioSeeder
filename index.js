@@ -41,7 +41,7 @@ async function main() {
             await cx.addTorrent(cache.torrent, {
                 savepath: cache.root,
                 category: "Stremio",
-                paused: true
+                dlLimit: Setup.DLLimit,
             })
         } catch (e) {
             console.log(`[-] Failed to add ${cache.hash} to qBittorrent`)
@@ -70,12 +70,17 @@ async function main() {
         }
 
         try {
-            const incomplete = files.filter(item => item.progress >= 0.5).map(f => f.index);
-            const complete = files.filter(item => item.progress <= 0.5).map(f => f.index);
+            const complete = files.filter(item => item.progress >= 0.5).map(f => f.index);
+            const incomplete = files.filter(item => item.progress <= 0.5).map(f => f.index);
             if (incomplete.length !== 0)
-                await cx.setFilePriority(torrent.hash, incomplete, 1)
-            if (complete.length !== 0)
-                await cx.setFilePriority(torrent.hash, complete, 0)
+                await cx.setFilePriority(torrent.hash, incomplete, 0)
+            if (complete.length !== 0) {
+                await cx.setFilePriority(torrent.hash, complete, 1)
+            }
+            else {
+                console.log(`[!] ${torrent.hash} has no files with progress. Run again later`)
+                await cx.recheckTorrent(torrent.hash)
+            }
         } catch (e) {
             console.log(`[-] Failed to update ${torrent.hash} status`)
         }
